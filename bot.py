@@ -273,7 +273,8 @@ async def generate_weekly_report(chat_id):
     # إعادة تعيين بيانات الأسبوع الجديد
     user_chat_activity = {}
     user_call_activity = {}
-    last_report_date = datetime.datetime.now()    await save_data()
+    last_report_date = datetime.datetime.now()    
+    await save_data()
 
 @client.on(events.NewMessage(pattern=r'^(تفاعل|/تفاعل)$'))
 @owner_only
