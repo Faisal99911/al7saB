@@ -164,28 +164,30 @@ async def chat_activity_handler(event):
         user_chat_activity[event.sender_id] = user_chat_activity.get(event.sender_id, 0) + (word_count * 10)
         await save_data()
 
-@client.on(events.VoiceChat(chats=None))
+from telethon import functions, types
+@client.on(events.Raw())
 async def call_activity_handler(event):
-    """يرصد تفاعل المكالمات الصوتية/المرئية."""
-    chat_id = event.chat_id
-    user_id = event.user_id
-
-    if not chat_id or not user_id: return
-
-    if event.left:
-        # المستخدم غادر المكالمة
-        if chat_id in active_calls and user_id in active_calls[chat_id]:
-            start_time = active_calls[chat_id].pop(user_id)
-            duration = (datetime.datetime.now() - start_time).total_seconds()
-            user_call_activity[user_id] = user_call_activity.get(user_id, 0) + duration
-            await save_data()
-    elif event.joined:
-        # المستخدم انضم للمكالمة
-        if chat_id not in active_calls:
-            active_calls[chat_id] = {}
-        active_calls[chat_id][user_id] = datetime.datetime.now()
-        await save_data()
-
+    """رصد تفاعل المكالمات الصوتية باستخدام الأحداث الخام."""
+    if isinstance(event, types.UpdateGroupCallParticipants):
+        chat_id = event.call.access_hash # أو استخدم معرف المجموعة المرتبط
+        for participant in event.participants:
+            user_id = participant.peer.user_id
+            
+            # إذا غادر المستخدم المكالمة
+            if participant.left:
+                if chat_id in active_calls and user_id in active_calls[chat_id]:
+                    start_time = active_calls[chat_id].pop(user_id)
+                    duration = (datetime.datetime.now() - start_time).total_seconds()
+                    user_call_activity[user_id] = user_call_activity.get(user_id, 0) + duration
+                    await save_data()
+            
+            # إذا انضم المستخدم للمكالمة
+            else:
+                if chat_id not in active_calls:
+                    active_calls[chat_id] = {}
+                if user_id not in active_calls[chat_id]:
+                    active_calls[chat_id][user_id] = datetime.datetime.now()
+                    await save_data()
 
 
 # --- 7. أوامر إدارة مجموعات التقارير ---
