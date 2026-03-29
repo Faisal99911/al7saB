@@ -136,8 +136,8 @@ def format_duration(seconds):
         parts.append(f"{minutes}m")
     
     if not parts:
-        return "0m" # إذا كانت المدة أقل من دقيقة
-    return " ".join(parts)
+        return "**0m**" # إذا كانت المدة أقل من دقيقة
+    return "**" + " ".join(parts) + "**"
 
 async def is_owner(event):
     """التحقق إذا كان المرسل هو المالك."""
@@ -169,7 +169,7 @@ from telethon import functions, types
 async def call_activity_handler(event):
     """رصد تفاعل المكالمات الصوتية باستخدام الأحداث الخام."""
     if isinstance(event, types.UpdateGroupCallParticipants):
-        chat_id = event.call.access_hash # أو استخدم معرف المجموعة المرتبط
+        chat_id = event.call.chat_id # استخدام معرف المجموعة المرتبط بالمكالمة
         for participant in event.participants:
             user_id = participant.peer.user_id
             
@@ -179,7 +179,7 @@ async def call_activity_handler(event):
                     start_time = active_calls[chat_id].pop(user_id)
                     duration = (datetime.datetime.now() - start_time).total_seconds()
                     user_call_activity[user_id] = user_call_activity.get(user_id, 0) + duration
-                    await save_data()
+
             
             # إذا انضم المستخدم للمكالمة
             else:
@@ -187,7 +187,8 @@ async def call_activity_handler(event):
                     active_calls[chat_id] = {}
                 if user_id not in active_calls[chat_id]:
                     active_calls[chat_id][user_id] = datetime.datetime.now()
-                    await save_data()
+        await save_data() # حفظ البيانات مرة واحدة بعد معالجة جميع المشاركين
+
 
 
 # --- 7. أوامر إدارة مجموعات التقارير ---
@@ -264,9 +265,9 @@ async def generate_weekly_report(chat_id):
         call_duration = format_duration(user_call_activity.get(user_id, 0))
         total_duration = format_duration(total_seconds)
         report_message += f"{i+1}. [{user_name}](tg://user?id={user_id})\n"
-        report_message += f"   • الشات: `{chat_duration}`\n"
-        report_message += f"   • المكالمات: `{call_duration}`\n"
-        report_message += f"   • الإجمالي: `{total_duration}`\n\n"
+        report_message += f"   • الشات: {chat_duration}\n"
+        report_message += f"   • المكالمات: {call_duration}\n"
+        report_message += f"   • الإجمالي: {total_duration}\n\n"
     
     report_message += "\nشكرًا لتفاعلكم الرائع! استمروا في إثراء المجموعة. 🚀"
 
@@ -309,9 +310,9 @@ async def generate_current_activity_report(chat_id):
         call_duration = format_duration(user_call_activity.get(user_id, 0))
         total_duration = format_duration(total_seconds)
         report_message += f"{i+1}. [{user_name}](tg://user?id={user_id})\n"
-        report_message += f"   • الشات: `{chat_duration}`\n"
-        report_message += f"   • المكالمات: `{call_duration}`\n"
-        report_message += f"   • الإجمالي: `{total_duration}`\n\n"
+        report_message += f"   • الشات: {chat_duration}\n"
+        report_message += f"   • المكالمات: {call_duration}\n"
+        report_message += f"   • الإجمالي: {total_duration}\n\n"
     
     report_message += "\nاستمروا في التفاعل! 🚀"
 
