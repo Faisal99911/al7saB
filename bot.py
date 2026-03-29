@@ -164,31 +164,39 @@ async def chat_activity_handler(event):
         user_chat_activity[event.sender_id] = user_chat_activity.get(event.sender_id, 0) + (word_count * 10)
         await save_data()
 
-from telethon import functions, types
 @client.on(events.Raw())
 async def call_activity_handler(event):
     """رصد تفاعل المكالمات الصوتية باستخدام الأحداث الخام."""
     if isinstance(event, types.UpdateGroupCallParticipants):
-        chat_id = event.call.chat_id # استخدام معرف المجموعة المرتبط بالمكالمة
+        # هنا التعديل: نحاول الحصول على معرف المكالمة نفسه 
+        # لأن chat_id غير موجود مباشرة في InputGroupCall
+        call_id = event.call.id
+        
+        # ملاحظة: في الأحداث الخام، قد لا يتوفر chat_id بسهولة.
+        # كحل بديل، سنستخدم call_id كمفتاح في active_calls بدلاً من chat_id
+        
         for participant in event.participants:
-            user_id = participant.peer.user_id
-            
+            # التأكد من وجود user_id (قد يختلف حسب نوع المشارك)
+            if hasattr(participant.peer, 'user_id'):
+                user_id = participant.peer.user_id
+            else:
+                continue
+
             # إذا غادر المستخدم المكالمة
             if participant.left:
-                if chat_id in active_calls and user_id in active_calls[chat_id]:
-                    start_time = active_calls[chat_id].pop(user_id)
+                if call_id in active_calls and user_id in active_calls[call_id]:
+                    start_time = active_calls[call_id].pop(user_id)
                     duration = (datetime.datetime.now() - start_time).total_seconds()
                     user_call_activity[user_id] = user_call_activity.get(user_id, 0) + duration
-
             
             # إذا انضم المستخدم للمكالمة
             else:
-                if chat_id not in active_calls:
-                    active_calls[chat_id] = {}
-                if user_id not in active_calls[chat_id]:
-                    active_calls[chat_id][user_id] = datetime.datetime.now()
-        await save_data() # حفظ البيانات مرة واحدة بعد معالجة جميع المشاركين
-
+                if call_id not in active_calls:
+                    active_calls[call_id] = {}
+                if user_id not in active_calls[call_id]:
+                    active_calls[call_id][user_id] = datetime.datetime.now()
+        
+        await save_data()
 
 
 # --- 7. أوامر إدارة مجموعات التقارير ---
